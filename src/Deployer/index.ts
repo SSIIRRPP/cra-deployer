@@ -173,7 +173,10 @@ class Deployer {
       Array.from(this.filesToUpload).map(async (filePath) => {
         console.log('Uploading File to s3 bucket: ' + filePath);
         const file = this.fileReader.getFile(filePath);
-        const contentType = mime.lookup(filePath);
+        const fileLookup = mime.lookup(filePath);
+        const contentType = mime.contentType(
+          typeof fileLookup === 'string' ? fileLookup : ''
+        );
         const command = new PutObjectCommand({
           Bucket: this.s3Bucket,
           Key: filePath,

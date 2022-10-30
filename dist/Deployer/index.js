@@ -145,7 +145,8 @@ class Deployer {
         return Promise.all(Array.from(this.filesToUpload).map((filePath) => __awaiter(this, void 0, void 0, function* () {
             console.log('Uploading File to s3 bucket: ' + filePath);
             const file = this.fileReader.getFile(filePath);
-            const contentType = mime_types_1.default.lookup(filePath);
+            const fileLookup = mime_types_1.default.lookup(filePath);
+            const contentType = mime_types_1.default.contentType(typeof fileLookup === 'string' ? fileLookup : '');
             const command = new client_s3_1.PutObjectCommand({
                 Bucket: this.s3Bucket,
                 Key: filePath,
