@@ -40,7 +40,7 @@ class Deployer {
         ]);
         this.filesToUpload = new Set();
         this.filesToDelete = new Set();
-        this.filesToInvalidate = new Set(...(config.invalidateFiles || []));
+        this.filesToInvalidate = new Set([...(config.invalidateFiles || [])]);
         this.filesToInvalidateOverride = config.invalidateFilesOverride;
         this.s3Client = new client_s3_1.S3Client({ region: (_b = config.region) !== null && _b !== void 0 ? _b : defaultRegion });
         this.cloudfrontClient = new client_cloudfront_1.CloudFrontClient({
