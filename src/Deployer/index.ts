@@ -59,6 +59,17 @@ class Deployer {
     this.fileReader = new _FileReader(config.buildPath);
   }
 
+  async uploadAll() {
+    const localFiles = this.fileReader.getLocalFiles();
+    localFiles.forEach((k) => this.filesToUpload.add(k));
+    const uploadResponse = await this.uploadFilesToBucket();
+    if (processResponses(uploadResponse)) {
+      await this.createCloudfrontInvalidation();
+    } else {
+      console.error('Error updating s3 Bucket contents');
+    }
+  }
+
   async start() {
     await this.getBucketContents();
     const localFiles = this.fileReader.getLocalFiles();
@@ -121,24 +132,16 @@ class Deployer {
 
   private async updateBucketContent() {
     try {
+      this.uploadAnywayFilePaths.forEach((filePath) =>
+        this.filesToDelete.add(filePath)
+      );
       const deleteResponse = await this.deleteContentsFromBucket();
+      this.uploadAnywayFilePaths.forEach((filePath) =>
+        this.filesToUpload.add(filePath)
+      );
       const uploadResponse = await this.uploadFilesToBucket();
       if (processResponses([...deleteResponse, ...uploadResponse])) {
-        const invalidationResponse = await this.createCloudfrontInvalidation();
-        if (processResponse(invalidationResponse)) {
-          console.log('Invalidation succesfully created: ', {
-            Id: invalidationResponse.Invalidation?.Id,
-            Status: invalidationResponse.Invalidation?.Status,
-            CreateTime: invalidationResponse.Invalidation?.CreateTime,
-            CloudfrontId: this.cloudfrontDistribution,
-          });
-          console.log('Successfully deployed!');
-        } else {
-          console.error(
-            'Error creating cloudfornt invalidation: ',
-            invalidationResponse
-          );
-        }
+        await this.createCloudfrontInvalidation();
       } else {
         console.error('Error updating s3 Bucket contents');
       }
@@ -148,9 +151,6 @@ class Deployer {
   }
 
   private deleteContentsFromBucket() {
-    this.uploadAnywayFilePaths.forEach((filePath) =>
-      this.filesToDelete.add(filePath)
-    );
     return Promise.all(
       Array.from(this.filesToDelete).map(async (filePath) => {
         console.log('Deleting File from s3 bucket: ' + filePath);
@@ -169,9 +169,6 @@ class Deployer {
   }
 
   private uploadFilesToBucket() {
-    this.uploadAnywayFilePaths.forEach((filePath) =>
-      this.filesToUpload.add(filePath)
-    );
     return Promise.all(
       Array.from(this.filesToUpload).map(async (filePath) => {
         console.log('Uploading File to s3 bucket: ' + filePath);
@@ -193,7 +190,7 @@ class Deployer {
     });
   }
 
-  private createCloudfrontInvalidation() {
+  private async createCloudfrontInvalidation() {
     if (!this.filesToInvalidateOverride) {
       defaultInvalidateFiles.forEach((fileKey) =>
         this.filesToInvalidate.add(fileKey)
@@ -209,7 +206,22 @@ class Deployer {
         CallerReference: this.invalidationId,
       },
     });
-    return this.cloudfrontClient.send(command);
+    const invalidationResponse = await this.cloudfrontClient.send(command);
+    if (processResponse(invalidationResponse)) {
+      console.log('Invalidation succesfully created: ', {
+        Id: invalidationResponse.Invalidation?.Id,
+        Status: invalidationResponse.Invalidation?.Status,
+        CreateTime: invalidationResponse.Invalidation?.CreateTime,
+        CloudfrontId: this.cloudfrontDistribution,
+      });
+      console.log('Successfully deployed!');
+    } else {
+      console.error(
+        'Error creating cloudfornt invalidation: ',
+        invalidationResponse
+      );
+    }
+    return invalidationResponse;
   }
 }
 
