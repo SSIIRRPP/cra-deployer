@@ -1,4 +1,4 @@
-import { DeployerConfig } from "../types";
+import { DeployerConfig } from '../types';
 declare class Deployer {
     private s3Client;
     private s3Bucket;
@@ -14,6 +14,7 @@ declare class Deployer {
     private uploadAnywayFilePaths;
     private invalidationId;
     constructor(config: DeployerConfig);
+    uploadAll(): Promise<void>;
     start(): Promise<void>;
     private populateFileKeySets;
     private getBucketContents;
