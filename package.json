@@ -15,11 +15,13 @@
   "author": "jsirp",
   "license": "MIT",
   "devDependencies": {
+    "@types/mime-types": "^2.1.1",
     "@types/node": "^18.11.6",
     "typescript": "^4.8.4"
   },
   "dependencies": {
     "@aws-sdk/client-cloudfront": "^3.197.0",
-    "@aws-sdk/client-s3": "^3.196.0"
+    "@aws-sdk/client-s3": "^3.196.0",
+    "mime-types": "^2.1.35"
   }
 }

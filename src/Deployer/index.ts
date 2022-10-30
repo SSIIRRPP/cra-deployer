@@ -3,26 +3,27 @@ import {
   ListObjectsCommand,
   PutObjectCommand,
   S3Client,
-} from "@aws-sdk/client-s3";
+} from '@aws-sdk/client-s3';
 import {
   CloudFrontClient,
   CreateInvalidationCommand,
-} from "@aws-sdk/client-cloudfront";
-import _FileReader from "./FileReader";
-import { processResponse, processResponses } from "./util";
-import { DeployerConfig } from "../types";
+} from '@aws-sdk/client-cloudfront';
+import _FileReader from './FileReader';
+import { processResponse, processResponses } from './util';
+import { DeployerConfig } from '../types';
+import mime from 'mime-types';
 
 const defaultUploadFiles = [
-  "index.html",
-  "asset-manifest.json",
-  "manifest.json",
-  "robots.txt",
-  "favicon.ico",
+  'index.html',
+  'asset-manifest.json',
+  'manifest.json',
+  'robots.txt',
+  'favicon.ico',
 ];
 
-const defaultRegion = "eu-west-3";
+const defaultRegion = 'eu-west-3';
 
-const defaultInvalidateFiles = ["/index.html"];
+const defaultInvalidateFiles = ['/index.html'];
 
 class Deployer {
   private s3Client: S3Client;
@@ -78,10 +79,10 @@ class Deployer {
       this.uploadAnyway
     ) {
       await this.updateBucketContent();
-      console.log("Closing cra-deployer");
+      console.log('Closing cra-deployer');
     } else {
-      console.log("Bucket content is up to date.");
-      console.log("Closing cra-deployer");
+      console.log('Bucket content is up to date.');
+      console.log('Closing cra-deployer');
     }
   }
 
@@ -125,24 +126,24 @@ class Deployer {
       if (processResponses([...deleteResponse, ...uploadResponse])) {
         const invalidationResponse = await this.createCloudfrontInvalidation();
         if (processResponse(invalidationResponse)) {
-          console.log("Invalidation succesfully created: ", {
+          console.log('Invalidation succesfully created: ', {
             Id: invalidationResponse.Invalidation?.Id,
             Status: invalidationResponse.Invalidation?.Status,
             CreateTime: invalidationResponse.Invalidation?.CreateTime,
             CloudfrontId: this.cloudfrontDistribution,
           });
-          console.log("Successfully deployed!");
+          console.log('Successfully deployed!');
         } else {
           console.error(
-            "Error creating cloudfornt invalidation: ",
+            'Error creating cloudfornt invalidation: ',
             invalidationResponse
           );
         }
       } else {
-        console.error("Error updating s3 Bucket contents");
+        console.error('Error updating s3 Bucket contents');
       }
     } catch (e) {
-      console.error("Error updating app assets: ", e);
+      console.error('Error updating app assets: ', e);
     }
   }
 
@@ -152,17 +153,17 @@ class Deployer {
     );
     return Promise.all(
       Array.from(this.filesToDelete).map(async (filePath) => {
-        console.log("Deleting File from s3 bucket: " + filePath);
+        console.log('Deleting File from s3 bucket: ' + filePath);
         const command = new DeleteObjectCommand({
           Bucket: this.s3Bucket,
           Key: filePath,
         });
         const res = await this.s3Client.send(command);
-        console.log("File successfully deleted from s3 bucket: " + filePath);
+        console.log('File successfully deleted from s3 bucket: ' + filePath);
         return res;
       })
     ).catch((e) => {
-      console.error("Error deleting old s3 Bucket assets: ", e);
+      console.error('Error deleting old s3 Bucket assets: ', e);
       return [e];
     });
   }
@@ -173,20 +174,21 @@ class Deployer {
     );
     return Promise.all(
       Array.from(this.filesToUpload).map(async (filePath) => {
-        console.log("Uploading File to s3 bucket: " + filePath);
+        console.log('Uploading File to s3 bucket: ' + filePath);
         const file = this.fileReader.getFile(filePath);
+        const contentType = mime.lookup(filePath);
         const command = new PutObjectCommand({
           Bucket: this.s3Bucket,
           Key: filePath,
           Body: file,
-          ContentType: filePath.endsWith(".html") ? "text/html" : undefined,
+          ContentType: typeof contentType === 'string' ? contentType : '',
         });
         const res = await this.s3Client.send(command);
-        console.log("File successfully uploaded to s3 bucket: " + filePath);
+        console.log('File successfully uploaded to s3 bucket: ' + filePath);
         return res;
       })
     ).catch((e) => {
-      console.error("Error uploading assets to s3 Bucket: ", e);
+      console.error('Error uploading assets to s3 Bucket: ', e);
       return [e];
     });
   }
