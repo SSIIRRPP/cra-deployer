@@ -19,7 +19,7 @@ Use it:
 
 	"scripts": {
 		...
-		"deploy": "npx cra-deployer --s3Bucket=s3BucketName --cloudfrontDistribution=cloudfronId (rest of options)",
+		"deploy": "npm run build && npx cra-deployer --s3Bucket=s3BucketName --cloudfrontDistribution=cloudfronId (rest of options)",
 	}
 
 ```
@@ -50,7 +50,7 @@ This would give you more readability on your package.json file:
 
 	"scripts": {
 		...
-		"deploy": "AWS_PROFILE=profile_name node deploy.js",
+		"deploy": "npm run build && node deploy.js",
 	}
 
 ```
@@ -65,7 +65,7 @@ For `Array<string>` options, provide values with comma separated format:
 ## To Consider
 
 You need to set AWS CLI with proper and valid credentials.
-If you need to use some AWS CLI profile othe than the default one, ypou can set a env variable before executing the script:
+If you need to use some AWS CLI profile other than the default one, you can set a env variable before executing the script:
 
 ```json
 	// package.json
